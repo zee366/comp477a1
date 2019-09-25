@@ -1,7 +1,7 @@
 #include "Sphere.h"
 
 Sphere::Sphere() :
-	_radius(1.0f), _sectors(360.0f), _stacks(360.0f)
+	_radius(1.0f), _sectors(360), _stacks(360)
 {
 	genVertexAttributes();
 	genIndices();
