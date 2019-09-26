@@ -49,8 +49,8 @@ void Sphere::genVertexAttributes()
 	float nx, ny, nz;
 	float s, t;
 	float radiusInverse = 1.0f / _radius;
-	float pi = glm::pi<float>();
-	float half_pi = glm::half_pi<float>();
+	float constexpr pi = glm::pi<float>();
+	float constexpr half_pi = glm::half_pi<float>();
 	
 	float sectorWidth = 2 * pi / _sectors;
 	float stackHeight = pi / _stacks;

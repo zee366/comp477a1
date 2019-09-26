@@ -4,6 +4,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Shader.h"
+#include "Camera.h"
+#include "Sphere.h"
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -45,7 +47,7 @@ int main() {
 
 	// build and compile our shader program
 	// ------------------------------------
-	Shader ourShader("", ""); // Add path to vertex and fragment shaders here
+	Shader ourShader("vertex.glsl", "fragment.glsl"); // Add path to vertex and fragment shaders here
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
@@ -62,6 +64,8 @@ int main() {
 		1, 2, 3		// second triangle
 	};
 
+	Sphere sphere(1, 12, 12);
+
 	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -71,10 +75,10 @@ int main() {
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sphere.getVertices().size() * sizeof(float), &sphere.getVertices()[0], GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.getIndices.size() * sizeof(int), &sphere.getIndices()[0], GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -85,7 +89,7 @@ int main() {
 	glBindVertexArray(0);
 	
 	// uncomment this call to draw in wireframe polygons.
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// render loop
 	// -----------
@@ -102,6 +106,7 @@ int main() {
 		ourShader.use();
 		glBindVertexArray(VAO); // no need to bind it every time (there is only 1 VAO for now)
 		// call glDraw functions here
+		
 
 		glBindVertexArray(0); // no need to unbind it every time (there is only 1 VAO for now)
 
