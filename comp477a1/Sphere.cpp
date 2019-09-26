@@ -103,7 +103,7 @@ void Sphere::genIndices()
 			{
 				_indices.push_back(k1);
 				_indices.push_back(k2);
-				_indices.push_back(k2 + 1);
+				_indices.push_back(k1 + 1);
 			}
 			
 			if(i != (_stacks - 1))
