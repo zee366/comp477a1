@@ -9,14 +9,15 @@
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1600;
+const unsigned int SCR_HEIGHT = 1200;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -58,24 +59,26 @@ int main() {
 	// build and compile our shader program
 	// ------------------------------------
 	Shader sphereShader("vertex.glsl", "fragment.glsl"); // Add path to vertex and fragment shaders here
+	Shader cubeShader("cubeVertex.glsl", "cubeFragment.glsl");
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
 
-	Sphere sphere(1, 32, 32);
+	// SPHERE
+	Sphere sphere(1, 32, 16);
 
-	unsigned int VBO, VAO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
+	unsigned int sphereVAO, sphereVBO, sphereEBO;
+	glGenVertexArrays(1, &sphereVAO);
+	glGenBuffers(1, &sphereVBO);
+	glGenBuffers(1, &sphereEBO);
 
 	// bind the Vertex Array Object first, then bind and set the vertex buffer(s), and then configure the vertex attribute(s).
-	glBindVertexArray(VAO);
+	glBindVertexArray(sphereVAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
 	glBufferData(GL_ARRAY_BUFFER, sphere.getVertices().size() * sizeof(float), &sphere.getVertices().front(), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.getIndices().size() * sizeof(int), &sphere.getIndices().front(), GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -85,13 +88,79 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(0);
+
+	// BOX
+	float cube[] = {
+		-5.0f,  5.0f,  5.0f,
+		-5.0f, -5.0f,  5.0f,
+		 5.0f, -5.0f,  5.0f,
+		 5.0f,  5.0f,  5.0f,
+		-5.0f,  5.0f, -5.0f,
+		-5.0f, -5.0f, -5.0f,
+		 5.0f, -5.0f, -5.0f,
+		 5.0f,  5.0f, -5.0f,
+	};
+
+	unsigned int cubeIndices[] = {
+		// outside
+		0, 1, 2,
+		0, 2, 3,
+		3, 2, 6,
+		3, 6, 7,
+		7, 6, 5,
+		7, 5, 4,
+		4, 5, 1,
+		4, 1, 0,
+		1, 5, 6,
+		1, 6, 2,
+		4, 0, 3,
+		4, 3, 7,
+		// inside
+		//3, 7, 1,
+		//3, 1, 0,
+		//0, 1, 5,
+		//0, 5, 4,
+		//4, 5, 6,
+		//4, 6, 7,
+		//7, 6, 2,
+		//7, 2, 3,
+		//0, 4, 7,
+		//0, 7, 3,
+		//5, 1, 7,
+		//5, 7, 6
+	};
+
+	unsigned int cubeVAO, cubeVBO, cubeEBO;
+	glGenVertexArrays(1, &cubeVAO);
+	glGenBuffers(1, &cubeVBO);
+	glGenBuffers(1, &cubeEBO);
+
+	glBindVertexArray(cubeVAO);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), &cube[0], GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), &cubeIndices[0], GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 	
 	// uncomment this call to draw in wireframe polygons.
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glDisable(GL_CULL_FACE);
 
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window)) {
+		double currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 		// input
 		// -----
 		processInput(window);
@@ -110,13 +179,18 @@ int main() {
 		sphereShader.setMat4("view", view);
 
 		
-		glBindVertexArray(VAO); // no need to bind it every time (there is only 1 VAO for now)
-		// call glDraw functions here
-
-		//glDrawArrays(GL_TRIANGLES, 0, sphere.getVertices().size());
+		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
 
-		glBindVertexArray(0); // no need to unbind it every time (there is only 1 VAO for now)
+		cubeShader.use();
+		cubeShader.setMat4("projection", projection);
+		cubeShader.setMat4("view", view);
+
+		glBindVertexArray(cubeVAO);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+
+		glBindVertexArray(0);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -126,9 +200,13 @@ int main() {
 
 	// optional: de-allocate all resources once they've outlived their purpose:
 	// ------------------------------------------------------------------------
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &sphereVAO);
+	glDeleteBuffers(1, &sphereVBO);
+	glDeleteBuffers(1, &sphereEBO);
+
+	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteBuffers(1, &cubeVBO);
+	glDeleteBuffers(1, &cubeEBO);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
@@ -141,6 +219,24 @@ int main() {
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+
+	// Camera movement
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		camera.ProcessKeyboard(YAWLEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		camera.ProcessKeyboard(YAWRIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		camera.ProcessKeyboard(PITCHUP, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		camera.ProcessKeyboard(PITCHDOWN, deltaTime);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -149,4 +245,21 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	// make sure the viewport matches the new dimensions; note that width and
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+// handle mouse movement (while left button is also pressed)
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+		return;
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		if (firstMouse) {
+			lastY = ypos;
+			firstMouse = false;
+		}
+
+		float yoffset = lastY - ypos;
+		lastY = ypos;
+
+		camera.ProcessMouseMovement(yoffset, deltaTime);
+	}
 }

@@ -142,8 +142,13 @@
     <ClInclude Include="Sphere.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cubeFragment.glsl" />
+    <None Include="cubeVertex.glsl" />
     <None Include="fragment.glsl" />
     <None Include="vertex.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="box.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

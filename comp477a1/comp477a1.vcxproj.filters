@@ -46,5 +46,16 @@
     <None Include="vertex.glsl">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="cubeFragment.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="cubeVertex.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="box.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

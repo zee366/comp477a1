@@ -12,13 +12,17 @@ enum Camera_Movement {
 	FORWARD,
 	BACKWARD,
 	LEFT,
-	RIGHT
+	RIGHT,
+	YAWLEFT,
+	YAWRIGHT,
+	PITCHUP,
+	PITCHDOWN
 };
 
 // Default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 2.5f;
+const float SPEED = 30.0f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 
@@ -78,6 +82,28 @@ public:
 			Position -= Right * velocity;
 		if (direction == RIGHT)
 			Position += Right * velocity;
+		if (direction == YAWLEFT) {
+			Yaw -= 1.0f;
+			updateCameraVectors();
+		}
+		if (direction == YAWRIGHT) {
+			Yaw += 1.0f;
+			updateCameraVectors();
+		}
+		if (direction == PITCHUP) {
+			Pitch += 1.0f;
+			// constrain pitch to 89 degrees so controls don't get reversed
+			if (Pitch > 89.0f)
+				Pitch = 89.0f;
+			updateCameraVectors();
+		}
+		if (direction == PITCHDOWN) {
+			Pitch -= 1.0f;
+			// constrain pitch to -89 degrees so controls don't get reversed
+			if (Pitch < -89.0f)
+				Pitch = -89.0f;
+			updateCameraVectors();
+		}
 	}
 
 	// Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
