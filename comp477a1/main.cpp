@@ -129,6 +129,7 @@ int main() {
 		//5, 1, 7,
 		//5, 7, 6
 	};
+	int numIndices = sizeof(cubeIndices) / sizeof(int);
 
 	unsigned int cubeVAO, cubeVBO, cubeEBO;
 	glGenVertexArrays(1, &cubeVAO);
@@ -149,7 +150,7 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	
-	// uncomment this call to draw in wireframe polygons.
+	// set modes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -187,7 +188,7 @@ int main() {
 		cubeShader.setMat4("view", view);
 
 		glBindVertexArray(cubeVAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
 
 
 		glBindVertexArray(0);
