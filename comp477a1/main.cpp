@@ -11,6 +11,7 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
+float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm);
 
 // settings
 const unsigned int SCR_WIDTH = 1600;
@@ -129,6 +130,34 @@ int main() {
 		//5, 1, 7,
 		//5, 7, 6
 	};
+
+	glm::vec3 topLeftFront(cube[0], cube[1], cube[2]);
+	glm::vec3 botLeftFront(cube[3], cube[4], cube[5]);
+	glm::vec3 botRightFront(cube[6], cube[7], cube[8]);
+	glm::vec3 topRightFront(cube[9], cube[10], cube[11]);
+
+	glm::vec3 topLeftBack(cube[12], cube[13], cube[14]);
+	glm::vec3 botLeftBack(cube[15], cube[16], cube[17]);
+	glm::vec3 botRightBack(cube[18], cube[19], cube[20]);
+	glm::vec3 topRightBack(cube[21], cube[22], cube[23]);
+
+	glm::vec3 leftFaceNorm = glm::normalize(glm::cross(topLeftFront - topLeftBack, botLeftBack - topLeftBack));
+	glm::vec3 rightFaceNorm = glm::normalize(glm::cross(topRightBack - topRightFront, botRightFront - topRightFront));
+	glm::vec3 backFaceNorm = glm::normalize(glm::cross(topLeftBack - topRightBack, botRightBack - topRightBack));
+	glm::vec3 frontFaceNorm = glm::normalize(glm::cross(topRightFront - topLeftFront, botLeftFront - topLeftFront));
+	glm::vec3 topFaceNorm = glm::normalize(glm::cross(topLeftFront - topRightFront, topRightBack - topRightFront));
+	glm::vec3 botFaceNorm = glm::normalize(glm::cross(botLeftBack - botRightBack, botRightFront - botRightBack));
+
+	/*
+	std::cout << "left face " << leftFaceNorm.x << std::endl;
+	std::cout << "right face " << rightFaceNorm.x << std::endl;
+	std::cout << "back face " << backFaceNorm.z << std::endl;
+	std::cout << "front face " << frontFaceNorm.z << std::endl;
+	std::cout << "top face " << topFaceNorm.y << std::endl;
+	std::cout << "bot face " << botFaceNorm.y << std::endl;
+	*/
+	//std::cout << distanceToPlane(glm::vec3(-1.0f, 1.0f, -1.0f), topLeftFront, leftFaceNorm);
+
 	int numIndices = sizeof(cubeIndices) / sizeof(int);
 
 	unsigned int cubeVAO, cubeVBO, cubeEBO;
@@ -158,6 +187,7 @@ int main() {
 
 	// render loop
 	// -----------
+	float move = 0.0f;
 	while (!glfwWindowShouldClose(window)) {
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -176,8 +206,16 @@ int main() {
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(move -= 0.01f, 0.0f, 0.0f));
+		sphere.setCenter(model);
+		//glm::vec3 center = sphere.getCenter();
+		//std::cout << center.x << " " << center.y << " " << center.z << std::endl;
 		sphereShader.setMat4("projection", projection);
 		sphereShader.setMat4("view", view);
+		sphereShader.setMat4("model", model);
+
+		if (distanceToPlane(sphere.getCenter(), topLeftFront, leftFaceNorm) < 1.0f)
+			std::cout << "intersection" << std::endl;
 
 		
 		glBindVertexArray(sphereVAO);
@@ -263,4 +301,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 
 		camera.ProcessMouseMovement(yoffset, deltaTime);
 	}
+}
+
+float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm) {
+	return abs(-glm::dot(planeNorm, planePoint) + glm::dot(planeNorm, point));
 }

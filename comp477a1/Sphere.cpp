@@ -8,7 +8,7 @@ Sphere::Sphere() :
 }
 
 Sphere::Sphere(float radius, int sectors, int stacks) :
-	_radius(radius), _sectors(sectors), _stacks(stacks)
+	_radius(radius), _sectors(sectors), _stacks(stacks), _center(glm::vec3(0.0f, 0.0f, 0.0f))
 {
 	genVertexAttributes();
 	genIndices();
@@ -41,6 +41,18 @@ glm::vec3 Sphere::getPointAt(float theta, float phi) const
 	float z = _radius * glm::sin(phi);
 	
 	return glm::vec3(x, y, z);
+}
+
+glm::vec3 Sphere::getCenter() const
+{
+	return _center;
+}
+
+void Sphere::setCenter(glm::mat4 transform)
+{
+	_center.x = transform[3][0];
+	_center.y = transform[3][1];
+	_center.z = transform[3][2];
 }
 
 void Sphere::genVertexAttributes()
