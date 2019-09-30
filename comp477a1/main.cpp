@@ -6,6 +6,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Sphere.h"
+#include "Cube.h"
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -93,6 +94,7 @@ int main() {
 	glBindVertexArray(0);
 
 	// BOX
+	/*
 	float cube[] = {
 		-5.0f,  5.0f,  5.0f,
 		-5.0f, -5.0f,  5.0f,
@@ -103,8 +105,10 @@ int main() {
 		 5.0f, -5.0f, -5.0f,
 		 5.0f,  5.0f, -5.0f,
 	};
+	*/
 
 	float cube2[] = {
+		// back face
 		-5.0f, -5.0f, -5.0f,  0.0f, 0.0f,
 		 5.0f, -5.0f, -5.0f,  1.0f, 0.0f,
 		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
@@ -112,6 +116,7 @@ int main() {
 		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f,
 		-5.0f, -5.0f, -5.0f,  0.0f, 0.0f,
 
+		// front face
 		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
 		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
 		 5.0f,  5.0f,  5.0f,  1.0f, 1.0f,
@@ -119,6 +124,7 @@ int main() {
 		-5.0f,  5.0f,  5.0f,  0.0f, 1.0f,
 		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
 
+		// left face
 		-5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
 		-5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
 		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
@@ -126,6 +132,7 @@ int main() {
 		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
 		-5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
 
+		// right face
 		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
 		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
 		 5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
@@ -133,6 +140,7 @@ int main() {
 		 5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
 		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
 
+		 // bottom face
 		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
 		 5.0f, -5.0f, -5.0f,  1.0f, 1.0f,
 		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
@@ -140,6 +148,7 @@ int main() {
 		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
 		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
 
+		// top face
 		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f,
 		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
 		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
@@ -177,22 +186,7 @@ int main() {
 		//5, 7, 6
 	};
 
-	glm::vec3 topLeftFront(cube[0], cube[1], cube[2]);
-	glm::vec3 botLeftFront(cube[3], cube[4], cube[5]);
-	glm::vec3 botRightFront(cube[6], cube[7], cube[8]);
-	glm::vec3 topRightFront(cube[9], cube[10], cube[11]);
-
-	glm::vec3 topLeftBack(cube[12], cube[13], cube[14]);
-	glm::vec3 botLeftBack(cube[15], cube[16], cube[17]);
-	glm::vec3 botRightBack(cube[18], cube[19], cube[20]);
-	glm::vec3 topRightBack(cube[21], cube[22], cube[23]);
-
-	glm::vec3 leftFaceNorm = glm::normalize(glm::cross(topLeftFront - topLeftBack, botLeftBack - topLeftBack));
-	glm::vec3 rightFaceNorm = glm::normalize(glm::cross(topRightBack - topRightFront, botRightFront - topRightFront));
-	glm::vec3 backFaceNorm = glm::normalize(glm::cross(topLeftBack - topRightBack, botRightBack - topRightBack));
-	glm::vec3 frontFaceNorm = glm::normalize(glm::cross(topRightFront - topLeftFront, botLeftFront - topLeftFront));
-	glm::vec3 topFaceNorm = glm::normalize(glm::cross(topLeftFront - topRightFront, topRightBack - topRightFront));
-	glm::vec3 botFaceNorm = glm::normalize(glm::cross(botLeftBack - botRightBack, botRightFront - botRightBack));
+	
 
 	/*
 	std::cout << "left face " << leftFaceNorm.x << std::endl;
@@ -214,7 +208,7 @@ int main() {
 	glBindVertexArray(cubeVAO);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cube2), &cube2[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), &cube[0], GL_STATIC_DRAW);
 
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), &cubeIndices[0], GL_STATIC_DRAW);
