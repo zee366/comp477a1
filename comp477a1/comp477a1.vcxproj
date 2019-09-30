@@ -135,11 +135,13 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cubeFragment.glsl" />
@@ -148,6 +150,7 @@
     <None Include="vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="blending_transparent_window.png" />
     <Image Include="box.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

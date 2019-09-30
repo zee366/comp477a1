@@ -7,6 +7,8 @@
 #include "Camera.h"
 #include "Sphere.h"
 #include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -102,6 +104,50 @@ int main() {
 		 5.0f,  5.0f, -5.0f,
 	};
 
+	float cube2[] = {
+		-5.0f, -5.0f, -5.0f,  0.0f, 0.0f,
+		 5.0f, -5.0f, -5.0f,  1.0f, 0.0f,
+		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
+		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
+		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f,
+		-5.0f, -5.0f, -5.0f,  0.0f, 0.0f,
+
+		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
+		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
+		 5.0f,  5.0f,  5.0f,  1.0f, 1.0f,
+		 5.0f,  5.0f,  5.0f,  1.0f, 1.0f,
+		-5.0f,  5.0f,  5.0f,  0.0f, 1.0f,
+		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
+
+		-5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
+		-5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
+		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
+		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
+		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
+		-5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
+
+		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
+		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
+		 5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
+		 5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
+		 5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
+		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
+
+		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
+		 5.0f, -5.0f, -5.0f,  1.0f, 1.0f,
+		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
+		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
+		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
+		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
+
+		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f,
+		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
+		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
+		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
+		-5.0f,  5.0f,  5.0f,  0.0f, 0.0f,
+		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f
+	};
+
 	unsigned int cubeIndices[] = {
 		// outside
 		0, 1, 2,
@@ -163,31 +209,63 @@ int main() {
 	unsigned int cubeVAO, cubeVBO, cubeEBO;
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &cubeVBO);
-	glGenBuffers(1, &cubeEBO);
+	//glGenBuffers(1, &cubeEBO);
 
 	glBindVertexArray(cubeVAO);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), &cube[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube2), &cube2[0], GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), &cubeIndices[0], GL_STATIC_DRAW);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), &cubeIndices[0], GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	// position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	// texture coordinates
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	
+	// TEXTURE
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	// set texture wrapping
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// load and generate texture
+	int width, height, numChannels;
+	unsigned char* data = stbi_load("box.png", &width, &height, &numChannels, 0);
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+	cubeShader.use();
+	cubeShader.setInt("texture1", 0);
+
 	// set modes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glDisable(GL_CULL_FACE);
 
 	// render loop
 	// -----------
+	glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
 	float move = 0.0f;
+	float moveIncrement = -0.02f;
 	while (!glfwWindowShouldClose(window)) {
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -199,24 +277,27 @@ int main() {
 		// render
 		// ------
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
 
 		sphereShader.use();
 
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(move -= 0.01f, 0.0f, 0.0f));
+		movement.x += moveIncrement;
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), movement);
 		sphere.setCenter(model);
-		//glm::vec3 center = sphere.getCenter();
-		//std::cout << center.x << " " << center.y << " " << center.z << std::endl;
+
 		sphereShader.setMat4("projection", projection);
 		sphereShader.setMat4("view", view);
 		sphereShader.setMat4("model", model);
 
-		if (distanceToPlane(sphere.getCenter(), topLeftFront, leftFaceNorm) < 1.0f)
-			std::cout << "intersection" << std::endl;
-
+		if (distanceToPlane(sphere.getCenter(), topLeftFront, leftFaceNorm) < 1.0f) {
+			moveIncrement *= -1;
+		}
 		
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
@@ -226,8 +307,7 @@ int main() {
 		cubeShader.setMat4("view", view);
 
 		glBindVertexArray(cubeVAO);
-		glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
-
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glBindVertexArray(0);
 
