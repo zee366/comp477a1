@@ -23,8 +23,8 @@ const unsigned int SCR_HEIGHT = 1200;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
-float lastX = SCR_WIDTH / 2.0f;
-float lastY = SCR_HEIGHT / 2.0f;
+double lastX = SCR_WIDTH / 2.0f;
+double lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // timing
@@ -233,25 +233,25 @@ void processInput(GLFWwindow* window) {
 
 	// Camera movement
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+		camera.ProcessKeyboard(FORWARD, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
+		camera.ProcessKeyboard(BACKWARD, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
+		camera.ProcessKeyboard(LEFT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+		camera.ProcessKeyboard(RIGHT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		camera.ProcessKeyboard(UP, deltaTime);
+		camera.ProcessKeyboard(UP, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		camera.ProcessKeyboard(DOWN, deltaTime);
+		camera.ProcessKeyboard(DOWN, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		camera.ProcessKeyboard(YAWLEFT, deltaTime);
+		camera.ProcessKeyboard(YAWLEFT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		camera.ProcessKeyboard(YAWRIGHT, deltaTime);
+		camera.ProcessKeyboard(YAWRIGHT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		camera.ProcessKeyboard(PITCHUP, deltaTime);
+		camera.ProcessKeyboard(PITCHUP, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		camera.ProcessKeyboard(PITCHDOWN, deltaTime);
+		camera.ProcessKeyboard(PITCHDOWN, (float)deltaTime);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -272,10 +272,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 			firstMouse = false;
 		}
 
-		float yoffset = lastY - ypos;
+		double yoffset = lastY - ypos;
 		lastY = ypos;
 
-		camera.ProcessMouseMovement(yoffset, deltaTime);
+		camera.ProcessMouseMovement((float)yoffset, (float)deltaTime);
 	}
 }
 
