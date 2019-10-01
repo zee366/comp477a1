@@ -15,6 +15,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm);
+void checkCollisions(glm::vec3 sphereCenter, glm::vec3 &moveIncrement);
 
 // settings
 const unsigned int SCR_WIDTH = 1600;
@@ -68,7 +69,9 @@ int main() {
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
 
+	// ******
 	// SPHERE
+	// ******
 	Sphere sphere(1, 32, 16);
 
 	unsigned int sphereVAO, sphereVBO, sphereEBO;
@@ -76,142 +79,33 @@ int main() {
 	glGenBuffers(1, &sphereVBO);
 	glGenBuffers(1, &sphereEBO);
 
-	// bind the Vertex Array Object first, then bind and set the vertex buffer(s), and then configure the vertex attribute(s).
 	glBindVertexArray(sphereVAO);
 
+	// position
 	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
 	glBufferData(GL_ARRAY_BUFFER, sphere.getVertices().size() * sizeof(float), &sphere.getVertices().front(), GL_STATIC_DRAW);
 
+	// indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.getIndices().size() * sizeof(int), &sphere.getIndices().front(), GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind.
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	glBindVertexArray(0);
 
-	// BOX
-	/*
-	float cube[] = {
-		-5.0f,  5.0f,  5.0f,
-		-5.0f, -5.0f,  5.0f,
-		 5.0f, -5.0f,  5.0f,
-		 5.0f,  5.0f,  5.0f,
-		-5.0f,  5.0f, -5.0f,
-		-5.0f, -5.0f, -5.0f,
-		 5.0f, -5.0f, -5.0f,
-		 5.0f,  5.0f, -5.0f,
-	};
-	*/
-
-	float cube2[] = {
-		// back face
-		-5.0f, -5.0f, -5.0f,  0.0f, 0.0f,
-		 5.0f, -5.0f, -5.0f,  1.0f, 0.0f,
-		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
-		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
-		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f,
-		-5.0f, -5.0f, -5.0f,  0.0f, 0.0f,
-
-		// front face
-		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
-		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
-		 5.0f,  5.0f,  5.0f,  1.0f, 1.0f,
-		 5.0f,  5.0f,  5.0f,  1.0f, 1.0f,
-		-5.0f,  5.0f,  5.0f,  0.0f, 1.0f,
-		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
-
-		// left face
-		-5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
-		-5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
-		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
-		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
-		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
-		-5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
-
-		// right face
-		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
-		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
-		 5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
-		 5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
-		 5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
-		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
-
-		 // bottom face
-		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
-		 5.0f, -5.0f, -5.0f,  1.0f, 1.0f,
-		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
-		 5.0f, -5.0f,  5.0f,  1.0f, 0.0f,
-		-5.0f, -5.0f,  5.0f,  0.0f, 0.0f,
-		-5.0f, -5.0f, -5.0f,  0.0f, 1.0f,
-
-		// top face
-		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f,
-		 5.0f,  5.0f, -5.0f,  1.0f, 1.0f,
-		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
-		 5.0f,  5.0f,  5.0f,  1.0f, 0.0f,
-		-5.0f,  5.0f,  5.0f,  0.0f, 0.0f,
-		-5.0f,  5.0f, -5.0f,  0.0f, 1.0f
-	};
-
-	unsigned int cubeIndices[] = {
-		// outside
-		0, 1, 2,
-		0, 2, 3,
-		3, 2, 6,
-		3, 6, 7,
-		7, 6, 5,
-		7, 5, 4,
-		4, 5, 1,
-		4, 1, 0,
-		1, 5, 6,
-		1, 6, 2,
-		4, 0, 3,
-		4, 3, 7,
-		// inside
-		//3, 7, 1,
-		//3, 1, 0,
-		//0, 1, 5,
-		//0, 5, 4,
-		//4, 5, 6,
-		//4, 6, 7,
-		//7, 6, 2,
-		//7, 2, 3,
-		//0, 4, 7,
-		//0, 7, 3,
-		//5, 1, 7,
-		//5, 7, 6
-	};
-
-	
-
-	/*
-	std::cout << "left face " << leftFaceNorm.x << std::endl;
-	std::cout << "right face " << rightFaceNorm.x << std::endl;
-	std::cout << "back face " << backFaceNorm.z << std::endl;
-	std::cout << "front face " << frontFaceNorm.z << std::endl;
-	std::cout << "top face " << topFaceNorm.y << std::endl;
-	std::cout << "bot face " << botFaceNorm.y << std::endl;
-	*/
-	//std::cout << distanceToPlane(glm::vec3(-1.0f, 1.0f, -1.0f), topLeftFront, leftFaceNorm);
-
-	int numIndices = sizeof(cubeIndices) / sizeof(int);
-
-	unsigned int cubeVAO, cubeVBO, cubeEBO;
+	// ****
+	// CUBE
+	// ****
+	unsigned int cubeVAO, cubeVBO;
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &cubeVBO);
-	//glGenBuffers(1, &cubeEBO);
 
 	glBindVertexArray(cubeVAO);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), &cube[0], GL_STATIC_DRAW);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), &cubeIndices[0], GL_STATIC_DRAW);
 
 	// position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
@@ -228,11 +122,13 @@ int main() {
 	unsigned int texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
+
 	// set texture wrapping
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	// load and generate texture
 	int width, height, numChannels;
 	unsigned char* data = stbi_load("box.png", &width, &height, &numChannels, 0);
@@ -245,6 +141,7 @@ int main() {
 	}
 	stbi_image_free(data);
 
+	// set uniform
 	cubeShader.use();
 	cubeShader.setInt("texture1", 0);
 
@@ -252,18 +149,18 @@ int main() {
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glDisable(GL_CULL_FACE);
+	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+	//glEnable(GL_CULL_FACE);
 
+	glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 moveIncrement = glm::vec3(-0.02f, 0.03f, -0.04f);
 	// render loop
 	// -----------
-	glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
-	float move = 0.0f;
-	float moveIncrement = -0.02f;
 	while (!glfwWindowShouldClose(window)) {
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
 		// input
 		// -----
 		processInput(window);
@@ -281,7 +178,9 @@ int main() {
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
-		movement.x += moveIncrement;
+		movement.x += moveIncrement.x;
+		movement.y += moveIncrement.y;
+		movement.z += moveIncrement.z;
 		glm::mat4 model = glm::translate(glm::mat4(1.0f), movement);
 		sphere.setCenter(model);
 
@@ -289,9 +188,7 @@ int main() {
 		sphereShader.setMat4("view", view);
 		sphereShader.setMat4("model", model);
 
-		if (distanceToPlane(sphere.getCenter(), topLeftFront, leftFaceNorm) < 1.0f) {
-			moveIncrement *= -1;
-		}
+		checkCollisions(sphere.getCenter(), moveIncrement);
 		
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
@@ -300,10 +197,12 @@ int main() {
 		cubeShader.setMat4("projection", projection);
 		cubeShader.setMat4("view", view);
 
+		glDepthMask(GL_FALSE);
 		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glBindVertexArray(0);
+		glDepthMask(GL_TRUE);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -319,7 +218,6 @@ int main() {
 
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteBuffers(1, &cubeVBO);
-	glDeleteBuffers(1, &cubeEBO);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
@@ -342,6 +240,10 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+		camera.ProcessKeyboard(UP, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+		camera.ProcessKeyboard(DOWN, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(YAWLEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
@@ -379,4 +281,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 
 float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm) {
 	return abs(-glm::dot(planeNorm, planePoint) + glm::dot(planeNorm, point));
+}
+
+void checkCollisions(glm::vec3 sphereCenter, glm::vec3 &moveIncrement) {
+	if (distanceToPlane(sphereCenter, topLeftFront, leftFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topRightFront, rightFaceNorm) < 1.0f)
+		moveIncrement.x = -moveIncrement.x;
+	else if (distanceToPlane(sphereCenter, topLeftFront, topFaceNorm) < 1.0f || distanceToPlane(sphereCenter, botLeftFront, botFaceNorm) < 1.0f)
+		moveIncrement.y = -moveIncrement.y;
+	else if(distanceToPlane(sphereCenter, topLeftFront, frontFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topLeftBack, backFaceNorm) < 1.0f)
+		moveIncrement.z = -moveIncrement.z;
 }

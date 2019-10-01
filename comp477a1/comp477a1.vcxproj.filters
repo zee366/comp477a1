@@ -63,10 +63,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="box.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="blending_transparent_window.png">
+    <Image Include="box.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
