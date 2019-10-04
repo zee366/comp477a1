@@ -7,8 +7,8 @@ Sphere::Sphere() :
 	genIndices();
 }
 
-Sphere::Sphere(float radius, int sectors, int stacks) :
-	_radius(radius), _sectors(sectors), _stacks(stacks), _center(glm::vec3(0.0f, 0.0f, 0.0f))
+Sphere::Sphere(float radius, int sectors, int stacks, glm::vec3 position) :
+	_radius(radius), _sectors(sectors), _stacks(stacks), _center(position)
 {
 	genVertexAttributes();
 	genIndices();

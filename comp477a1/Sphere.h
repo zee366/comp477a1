@@ -10,7 +10,7 @@ class Sphere
 {
 public:
 	Sphere();
-	Sphere(float radius, int sectors, int stacks);
+	Sphere(float radius, int sectors, int stacks, glm::vec3 position);
 
 	vector<float> getVertices() const;
 	vector<float> getNormals() const;

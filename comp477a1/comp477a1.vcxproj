@@ -70,7 +70,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\brenj\Documents\OpenGL\Include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\brenj\Desktop\OpenGL\OpenGL\Include;C:\Users\brenj\Documents\OpenGL\Include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\brenj\Documents\OpenGL\Libraries;C:\Users\brenj\Desktop\OpenGL\OpenGL\Libraries;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

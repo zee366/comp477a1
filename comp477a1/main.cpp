@@ -15,7 +15,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm);
-void checkCollisions(glm::vec3 sphereCenter, glm::vec3 &moveIncrement);
+void checkCollisions(glm::vec3 sphereCenter, glm::vec3& acceleration);
+
 
 // settings
 const unsigned int SCR_WIDTH = 1600;
@@ -30,6 +31,14 @@ bool firstMouse = true;
 // timing
 double deltaTime = 0.0f; // time between current frame and last frame
 double lastFrame = 0.0f; // time of last frame
+
+// physics
+const float INIT_POSITION = 0.0f;
+const float INIT_VELOCITY = 0.02f;
+const float ACCELERATION = -0.01f;
+
+unsigned int menuChoice = 1;
+float gravity = -1.0f;
 
 int main() {
 	// glfw: initialize and configure
@@ -72,7 +81,8 @@ int main() {
 	// ******
 	// SPHERE
 	// ******
-	Sphere sphere(1, 32, 16);
+	glm::vec3 initialPosition = glm::vec3(INIT_POSITION);
+	Sphere sphere(1, 32, 16, initialPosition);
 
 	unsigned int sphereVAO, sphereVBO, sphereEBO;
 	glGenVertexArrays(1, &sphereVAO);
@@ -152,8 +162,10 @@ int main() {
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 	//glEnable(GL_CULL_FACE);
 
-	glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::vec3 moveIncrement = glm::vec3(-0.02f, 0.03f, -0.04f);
+	glm::vec3 acceleration = glm::vec3(-3.0f, 1.5f, -2.1f);
+	glm::vec3 velocity = glm::vec3(0.0f);
+	glm::vec3 delta_r = glm::vec3(0.0f);
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window)) {
@@ -178,17 +190,32 @@ int main() {
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
-		movement.x += moveIncrement.x;
-		movement.y += moveIncrement.y;
-		movement.z += moveIncrement.z;
-		glm::mat4 model = glm::translate(glm::mat4(1.0f), movement);
+
+		velocity += acceleration * (float)deltaTime;
+		
+
+		switch (menuChoice) {
+		case 1:
+			delta_r = velocity + 0.5f * acceleration * (float)deltaTime * (float)deltaTime;
+			break;
+		case 2:
+			delta_r.x = velocity.x + 0.5f * acceleration.x * (float)deltaTime * (float)deltaTime;
+			//delta_r.y = velocity.y + 0.5f * gravity * (float)deltaTime * (float)deltaTime;
+			delta_r.z = velocity.z + 0.5f * acceleration.z * (float)deltaTime * (float)deltaTime;
+			delta_r.y += gravity * (float)deltaTime;
+			break;
+		}
+
+
+
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), delta_r);
 		sphere.setCenter(model);
 
 		sphereShader.setMat4("projection", projection);
 		sphereShader.setMat4("view", view);
 		sphereShader.setMat4("model", model);
 
-		checkCollisions(sphere.getCenter(), moveIncrement);
+		checkCollisions(sphere.getCenter(), acceleration);
 		
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
@@ -252,6 +279,10 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(PITCHUP, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		camera.ProcessKeyboard(PITCHDOWN, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+		menuChoice = 2;
+		std::cout << "2" << endl;
+	}
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -283,11 +314,14 @@ float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm
 	return abs(-glm::dot(planeNorm, planePoint) + glm::dot(planeNorm, point));
 }
 
-void checkCollisions(glm::vec3 sphereCenter, glm::vec3 &moveIncrement) {
-	if (distanceToPlane(sphereCenter, topLeftFront, leftFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topRightFront, rightFaceNorm) < 1.0f)
-		moveIncrement.x = -moveIncrement.x;
-	else if (distanceToPlane(sphereCenter, topLeftFront, topFaceNorm) < 1.0f || distanceToPlane(sphereCenter, botLeftFront, botFaceNorm) < 1.0f)
-		moveIncrement.y = -moveIncrement.y;
-	else if(distanceToPlane(sphereCenter, topLeftFront, frontFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topLeftBack, backFaceNorm) < 1.0f)
-		moveIncrement.z = -moveIncrement.z;
+void checkCollisions(glm::vec3 sphereCenter, glm::vec3& acceleration) {
+	if (distanceToPlane(sphereCenter, topLeftFront, leftFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topRightFront, rightFaceNorm) < 1.0f) {
+		acceleration.x = -acceleration.x;
+	}
+	else if (distanceToPlane(sphereCenter, topLeftFront, topFaceNorm) < 1.0f || distanceToPlane(sphereCenter, botLeftFront, botFaceNorm) < 1.0f) {
+		acceleration.y = -acceleration.y;
+	}
+	else if (distanceToPlane(sphereCenter, topLeftFront, frontFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topLeftBack, backFaceNorm) < 1.0f) {
+		acceleration.z = -acceleration.z;
+	}
 }
