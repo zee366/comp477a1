@@ -15,7 +15,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm);
-void checkCollisions(glm::vec3 sphereCenter, glm::vec3& acceleration);
+bool checkCollisions(glm::vec3 sphereCenter, glm::vec3& velocity);
 
 
 // settings
@@ -34,11 +34,9 @@ double lastFrame = 0.0f; // time of last frame
 
 // physics
 const float INIT_POSITION = 0.0f;
-const float INIT_VELOCITY = 0.02f;
-const float ACCELERATION = -0.01f;
-
 unsigned int menuChoice = 1;
-float gravity = -1.0f;
+float gravity = -9.81f;
+bool kineticLoss = false;
 
 int main() {
 	// glfw: initialize and configure
@@ -162,10 +160,10 @@ int main() {
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 	//glEnable(GL_CULL_FACE);
 
-	glm::vec3 acceleration = glm::vec3(-3.0f, 1.5f, -2.1f);
-	glm::vec3 velocity = glm::vec3(0.0f);
-	glm::vec3 delta_r = glm::vec3(0.0f);
-
+	glm::vec3 acceleration = glm::vec3(0.0f);
+	glm::vec3 velocity = glm::vec3(-3.0f, 1.5f, -2.1f);
+	glm::vec3 position = glm::vec3(0.0f);
+	
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window)) {
@@ -191,31 +189,35 @@ int main() {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 
-		velocity += acceleration * (float)deltaTime;
-		
-
 		switch (menuChoice) {
 		case 1:
-			delta_r = velocity + 0.5f * acceleration * (float)deltaTime * (float)deltaTime;
+			velocity += acceleration * (float)deltaTime * 0.5f;
 			break;
 		case 2:
-			delta_r.x = velocity.x + 0.5f * acceleration.x * (float)deltaTime * (float)deltaTime;
-			//delta_r.y = velocity.y + 0.5f * gravity * (float)deltaTime * (float)deltaTime;
-			delta_r.z = velocity.z + 0.5f * acceleration.z * (float)deltaTime * (float)deltaTime;
-			delta_r.y += gravity * (float)deltaTime;
+			velocity += (glm::vec3(acceleration.x, acceleration.y + gravity, acceleration.z)) * (float)deltaTime * 0.5f;
+			break;
+		case 3:
+			velocity += (acceleration - (0.5f * 0.5f * (velocity * glm::abs(velocity)))) * (0.5f * (float)deltaTime);
+			break;
+		case 5:
+			velocity += (glm::vec3(acceleration.x, acceleration.y + gravity, acceleration.z) - (0.5f * 0.5f * (velocity * glm::abs(velocity)))) * ((float)deltaTime * 0.5f);
 			break;
 		}
 
+		if (checkCollisions(sphere.getCenter(), velocity)) {
+			if (kineticLoss) {
+				velocity *= 0.9f;
+			}
+		}
 
+		position += velocity * (float)deltaTime + acceleration * ((float)deltaTime * (float)deltaTime * 0.5f);
 
-		glm::mat4 model = glm::translate(glm::mat4(1.0f), delta_r);
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
 		sphere.setCenter(model);
 
 		sphereShader.setMat4("projection", projection);
 		sphereShader.setMat4("view", view);
 		sphereShader.setMat4("model", model);
-
-		checkCollisions(sphere.getCenter(), acceleration);
 		
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
@@ -281,7 +283,17 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(PITCHDOWN, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
 		menuChoice = 2;
-		std::cout << "2" << endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+		menuChoice = 3;
+	}
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+		menuChoice = 4;
+		kineticLoss = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
+		menuChoice = 5;
+		kineticLoss = true;
 	}
 }
 
@@ -314,14 +326,18 @@ float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm
 	return abs(-glm::dot(planeNorm, planePoint) + glm::dot(planeNorm, point));
 }
 
-void checkCollisions(glm::vec3 sphereCenter, glm::vec3& acceleration) {
+bool checkCollisions(glm::vec3 sphereCenter, glm::vec3& velocity) {
 	if (distanceToPlane(sphereCenter, topLeftFront, leftFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topRightFront, rightFaceNorm) < 1.0f) {
-		acceleration.x = -acceleration.x;
+		velocity.x = -velocity.x;
+		return true;
 	}
 	else if (distanceToPlane(sphereCenter, topLeftFront, topFaceNorm) < 1.0f || distanceToPlane(sphereCenter, botLeftFront, botFaceNorm) < 1.0f) {
-		acceleration.y = -acceleration.y;
+		velocity.y = -velocity.y;
+		return true;
 	}
 	else if (distanceToPlane(sphereCenter, topLeftFront, frontFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topLeftBack, backFaceNorm) < 1.0f) {
-		acceleration.z = -acceleration.z;
+		velocity.z = -velocity.z;
+		return true;
 	}
+	return false;
 }
