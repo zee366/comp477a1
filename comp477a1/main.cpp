@@ -158,6 +158,10 @@ int main() {
 	cubeShader.use();
 	cubeShader.setInt("texture1", 0);
 
+	// *****
+	// CURVE
+	// *****
+
 	// set modes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
@@ -240,8 +244,6 @@ int main() {
 		
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
-
-
 
 		cubeShader.use();
 		cubeShader.setMat4("projection", projection);

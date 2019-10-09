@@ -47,6 +47,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
+#include <glm/glm.hpp>
 #endif
 
 #include <iostream>
@@ -1223,6 +1224,8 @@ namespace cugl
 		 * \pre The vectors \a u and \a v must be unit vectors.
 		 */
 		Quaternion(const Vector& u, const Vector& v);
+
+		Quaternion(const glm::vec3& u, const glm::vec3& v);
 
 		/**
 		 * Add the quaternion q to this quaternion.

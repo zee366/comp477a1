@@ -53,6 +53,9 @@
     <ClInclude Include="cugl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Curve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment.glsl">
