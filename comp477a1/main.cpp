@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "Sphere.h"
 #include "Cube.h"
+//#include "Curve.h"
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -28,6 +29,9 @@ double lastX = SCR_WIDTH / 2.0f;
 double lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+// lighting
+glm::vec3 lightPos(10.0f, 10.0f, 14.14f);
+
 // timing
 double deltaTime = 0.0f; // time between current frame and last frame
 double lastFrame = 0.0f; // time of last frame
@@ -36,6 +40,7 @@ double lastFrame = 0.0f; // time of last frame
 const float INIT_POSITION = 0.0f;
 unsigned int menuChoice = 1;
 float gravity = -9.81f;
+float dragForce = 1.2f;
 bool kineticLoss = false;
 
 int main() {
@@ -156,12 +161,15 @@ int main() {
 	// set modes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_LINE_STIPPLE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 	//glEnable(GL_CULL_FACE);
 
 	glm::vec3 acceleration = glm::vec3(0.0f);
 	glm::vec3 velocity = glm::vec3(-3.0f, 1.5f, -2.1f);
+	glm::vec3 newVelocity(0.0f);
 	glm::vec3 position = glm::vec3(0.0f);
 	
 	// render loop
@@ -191,18 +199,29 @@ int main() {
 
 		switch (menuChoice) {
 		case 1:
-			velocity += acceleration * (float)deltaTime * 0.5f;
+			kineticLoss = false;
+			newVelocity = velocity + acceleration * (float)deltaTime * 0.5f;
 			break;
 		case 2:
-			velocity += (glm::vec3(acceleration.x, acceleration.y + gravity, acceleration.z)) * (float)deltaTime * 0.5f;
+			kineticLoss = false;
+			newVelocity = velocity + (glm::vec3(acceleration.x, acceleration.y + gravity, acceleration.z)) * (float)deltaTime * 0.5f;
 			break;
 		case 3:
-			velocity += (acceleration - (0.5f * 0.5f * (velocity * glm::abs(velocity)))) * (0.5f * (float)deltaTime);
+			kineticLoss = false;
+			newVelocity = velocity + (acceleration - (0.5f * dragForce * (velocity * glm::abs(velocity)))) * (0.5f * (float)deltaTime);
+			break;
+		case 4:
+			kineticLoss = true;
+			newVelocity = velocity;
 			break;
 		case 5:
-			velocity += (glm::vec3(acceleration.x, acceleration.y + gravity, acceleration.z) - (0.5f * 0.5f * (velocity * glm::abs(velocity)))) * ((float)deltaTime * 0.5f);
+			kineticLoss = true;
+			newVelocity = velocity + (glm::vec3(acceleration.x, acceleration.y + gravity, acceleration.z) - (0.5f * 0.5f * (velocity * glm::abs(velocity)))) * ((float)deltaTime * 0.5f);
 			break;
 		}
+
+		acceleration = (newVelocity - velocity) / (float)deltaTime;
+		velocity = newVelocity;
 
 		if (checkCollisions(sphere.getCenter(), velocity)) {
 			if (kineticLoss) {
@@ -222,13 +241,15 @@ int main() {
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
 
+
+
 		cubeShader.use();
 		cubeShader.setMat4("projection", projection);
 		cubeShader.setMat4("view", view);
 
 		glDepthMask(GL_FALSE);
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_LINES, 0, 36);
 
 		glBindVertexArray(0);
 		glDepthMask(GL_TRUE);
@@ -281,6 +302,9 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(PITCHUP, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		camera.ProcessKeyboard(PITCHDOWN, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+		menuChoice = 1;
+	}
 	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
 		menuChoice = 2;
 	}
@@ -289,11 +313,9 @@ void processInput(GLFWwindow* window) {
 	}
 	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
 		menuChoice = 4;
-		kineticLoss = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
 		menuChoice = 5;
-		kineticLoss = true;
 	}
 }
 
