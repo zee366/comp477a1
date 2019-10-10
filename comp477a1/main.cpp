@@ -47,6 +47,8 @@ float gravity = -9.81f;
 float dragForce = 1.2f;
 bool kineticLoss = false;
 
+double constexpr pi = glm::pi<double>();
+
 int main() {
 	// glfw: initialize and configure
 	// ------------------------------
@@ -82,6 +84,7 @@ int main() {
 	Shader sphereShader("vertex.glsl", "fragment.glsl"); // Add path to vertex and fragment shaders here
 	Shader cubeShader("cubeVertex.glsl", "cubeFragment.glsl");
 	Shader curveShader("curveVertex.glsl", "curveFragment.glsl");
+	Shader sphereOnCurveShader("sphereOnCurveVertex.glsl", "sphereOnCurveFragment.glsl");
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
@@ -169,7 +172,7 @@ int main() {
 
 	Curve c;
 	buildCurve(c);
-	double t = 0;  // Global time on curve, used by display function.
+	double t = 0.0;  // Global time on curve, used by display function.
 	vector<float> curvePoints;
 	const int NP = 1000;
 	for (int i = 0; i <= NP; ++i) {
@@ -195,6 +198,33 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+	// ***************
+	// SPHERE ON CURVE
+	// ***************
+
+	Sphere sphereOnCurve(1.0f, 32, 16, initialPosition);
+
+	unsigned int sphereOnCurveVAO, sphereOnCurveVBO, sphereOnCurveEBO;
+	glGenVertexArrays(1, &sphereOnCurveVAO);
+	glGenBuffers(1, &sphereOnCurveVBO);
+	glGenBuffers(1, &sphereOnCurveEBO);
+
+	glBindVertexArray(sphereOnCurveVAO);
+
+	// position
+	glBindBuffer(GL_ARRAY_BUFFER, sphereOnCurveVBO);
+	glBufferData(GL_ARRAY_BUFFER, sphereOnCurve.getVertices().size() * sizeof(float), &sphereOnCurve.getVertices().front(), GL_STATIC_DRAW);
+
+	// indices
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereOnCurveEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereOnCurve.getIndices().size() * sizeof(int), &sphereOnCurve.getIndices().front(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 	// set modes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
@@ -208,13 +238,32 @@ int main() {
 	glm::vec3 velocity = glm::vec3(-3.0f, 1.5f, -2.1f);
 	glm::vec3 newVelocity(0.0f);
 	glm::vec3 position = glm::vec3(0.0f);
-	
+
+	glm::vec3 sphereOnCurvePosition = glm::vec3(0.0f);
+	const double DT = 10;
+	const double totalTime = 10000; // Milliseconds needed to traverse curve
+	double startTime = GetTickCount64();
+	double pathTime = 0;
+	double i = 0.0f;
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window)) {
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		double currTime = GetTickCount64() - startTime;
+		while (pathTime < currTime)
+			pathTime += DT;
+		i = pathTime / totalTime;
+		if (i > 1.0)
+		{
+			startTime = GetTickCount64();
+			pathTime = 0;
+		}
+
+		t = 0.5f * (glm::sin((i - 0.5f) * pi) + 1.0f);
 
 		// input
 		// -----
@@ -294,6 +343,19 @@ int main() {
 
 		glBindVertexArray(curveVAO);
 		glDrawArrays(GL_LINE_STRIP, 0, NP);
+
+		sphereOnCurvePosition = cuglPointToGlmVec(c.getPos(t));
+
+		glm::mat4 sphereOnCurveModel = glm::translate(glm::mat4(1.0f), sphereOnCurvePosition);
+		sphereOnCurve.setCenter(sphereOnCurveModel);
+
+		sphereOnCurveShader.use();
+		sphereOnCurveShader.setMat4("projection", projection);
+		sphereOnCurveShader.setMat4("view", view);
+		sphereOnCurveShader.setMat4("model", sphereOnCurveModel);
+
+		glBindVertexArray(sphereOnCurveVAO);
+		glDrawElements(GL_TRIANGLES, sphereOnCurve.getIndices().size(), GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(0);
 

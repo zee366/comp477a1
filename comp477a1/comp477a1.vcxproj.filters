@@ -76,6 +76,12 @@
     <None Include="curveFragment.glsl">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="sphereOnCurveVertex.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="sphereOnCurveFragment.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="box.png">

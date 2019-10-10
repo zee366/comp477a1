@@ -181,7 +181,7 @@ public:
 		if (ok)
 		{
 			size_t L = 0;
-			size_t R = dist.size();
+			size_t R = dist.size() - 1;
 			while (R - L > 1)
 			{
 				size_t M = (L + R) / 2;

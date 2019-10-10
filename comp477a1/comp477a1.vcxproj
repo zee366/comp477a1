@@ -154,6 +154,8 @@
     <None Include="curveFragment.glsl" />
     <None Include="curveVertex.glsl" />
     <None Include="fragment.glsl" />
+    <None Include="sphereOnCurveFragment.glsl" />
+    <None Include="sphereOnCurveVertex.glsl" />
     <None Include="vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
