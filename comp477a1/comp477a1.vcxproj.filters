@@ -70,6 +70,12 @@
     <None Include="cubeVertex.glsl">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="curveVertex.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="curveFragment.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="box.png">

@@ -151,6 +151,8 @@
   <ItemGroup>
     <None Include="cubeFragment.glsl" />
     <None Include="cubeVertex.glsl" />
+    <None Include="curveFragment.glsl" />
+    <None Include="curveVertex.glsl" />
     <None Include="fragment.glsl" />
     <None Include="vertex.glsl" />
   </ItemGroup>

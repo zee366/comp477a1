@@ -7,7 +7,8 @@
 #include "Camera.h"
 #include "Sphere.h"
 #include "Cube.h"
-//#include "Curve.h"
+#include "cugl.h"
+#include "Curve.h"
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -17,6 +18,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm);
 bool checkCollisions(glm::vec3 sphereCenter, glm::vec3& velocity);
+void buildCurve(Curve& c);
+cugl::Point glmVecToCuglPoint(const glm::vec3& v);
+glm::vec3 cuglPointToGlmVec(const cugl::Point& p);
 
 
 // settings
@@ -24,7 +28,7 @@ const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 1200;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
+jbogl::Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
 double lastX = SCR_WIDTH / 2.0f;
 double lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -77,6 +81,7 @@ int main() {
 	// ------------------------------------
 	Shader sphereShader("vertex.glsl", "fragment.glsl"); // Add path to vertex and fragment shaders here
 	Shader cubeShader("cubeVertex.glsl", "cubeFragment.glsl");
+	Shader curveShader("curveVertex.glsl", "curveFragment.glsl");
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
@@ -85,7 +90,7 @@ int main() {
 	// SPHERE
 	// ******
 	glm::vec3 initialPosition = glm::vec3(INIT_POSITION);
-	Sphere sphere(1, 32, 16, initialPosition);
+	Sphere sphere(1.0f, 32, 16, initialPosition);
 
 	unsigned int sphereVAO, sphereVBO, sphereEBO;
 	glGenVertexArrays(1, &sphereVAO);
@@ -162,6 +167,34 @@ int main() {
 	// CURVE
 	// *****
 
+	Curve c;
+	buildCurve(c);
+	double t = 0;  // Global time on curve, used by display function.
+	vector<float> curvePoints;
+	const int NP = 1000;
+	for (int i = 0; i <= NP; ++i) {
+		glm::vec3 coordinate = cuglPointToGlmVec(c.getPos(double(i) / double(NP)));
+		curvePoints.push_back(coordinate.x);
+		curvePoints.push_back(coordinate.y);
+		curvePoints.push_back(coordinate.z);
+		//std::cout << coordinate.x << " " << coordinate.y << " " << coordinate.z << std::endl;
+	}
+
+	unsigned int curveVAO, curveVBO;
+	glGenVertexArrays(1, &curveVAO);
+	glGenBuffers(1, &curveVBO);
+
+	glBindVertexArray(curveVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, curveVBO);
+	glBufferData(GL_ARRAY_BUFFER, curvePoints.size() * sizeof(float), &curvePoints.front(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 	// set modes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
@@ -191,9 +224,6 @@ int main() {
 		// ------
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
 
 		sphereShader.use();
 
@@ -245,16 +275,27 @@ int main() {
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
 		cubeShader.use();
 		cubeShader.setMat4("projection", projection);
 		cubeShader.setMat4("view", view);
 
 		glDepthMask(GL_FALSE);
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_LINES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glDepthMask(GL_TRUE);
+
+		curveShader.use();
+		curveShader.setMat4("projection", projection);
+		curveShader.setMat4("view", view);
+
+		glBindVertexArray(curveVAO);
+		glDrawArrays(GL_LINE_STRIP, 0, NP);
 
 		glBindVertexArray(0);
-		glDepthMask(GL_TRUE);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -270,6 +311,11 @@ int main() {
 
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteBuffers(1, &cubeVBO);
+
+	glDeleteVertexArrays(1, &curveVAO);
+	glDeleteBuffers(1, &curveVBO);
+
+	glDeleteTextures(1, &texture);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
@@ -364,4 +410,37 @@ bool checkCollisions(glm::vec3 sphereCenter, glm::vec3& velocity) {
 		return true;
 	}
 	return false;
+}
+
+// Construct a curve from a set of built-in point pairs.
+void buildCurve(Curve& c)
+{
+	vector<Point> sp;
+	sp.push_back(Point(-7.0f, 6.0f, -8.0f));
+	sp.push_back(Point(7.0f, 5.0f, -8.5f));
+	sp.push_back(Point(7.3f, 7.5f, 7.5f));
+	sp.push_back(Point(-8.0f, 3.0f, 6.5f));
+	sp.push_back(Point(-8.2f, 2.0f, -8.3f));
+	sp.push_back(Point(9.0f, 1.0f, -9.5f));
+	sp.push_back(Point(7.5f, 0.0f, 7.0f));
+	sp.push_back(Point(-10.0f, -1.0f, 8.8f));
+
+	vector<Point> ep;
+	ep.push_back(Point(0.0f, 5.5f, -8.5f));
+	ep.push_back(Point(6.9f, 4.5f, 0.0f));
+	ep.push_back(Point(0.0f, 3.5f, 7.5f));
+	ep.push_back(Point(-8.5f, 2.5f, 0.0f));
+	ep.push_back(Point(0.0f, -1.5f, -13.5f));
+	ep.push_back(Point(10.5f, 0.5f, 0.0f));
+	ep.push_back(Point(0.0f, -3.5f, 9.5f));
+	ep.push_back(Point(-12.5f, -8.5f, 0.0f));
+	c.setPoints(sp, ep);
+}
+
+cugl::Point glmVecToCuglPoint(const glm::vec3& v) {
+	return cugl::Point(v.x, v.y, v.z);
+}
+
+glm::vec3 cuglPointToGlmVec(const cugl::Point& p) {
+	return glm::vec3(p[0], p[1], p[2]);
 }

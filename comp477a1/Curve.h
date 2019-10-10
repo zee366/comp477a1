@@ -4,14 +4,12 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
-#include <glm/glm.hpp>
 #include <GL/glut.h>
 #include "cugl.h"
 #include <windows.h>
 
 using namespace std;
 using namespace cugl;
-using namespace glm;
 
 // Current window dimensions
 int windowWidth = 800;
@@ -40,17 +38,13 @@ Point interpolate(const Point& p, const Point& q, double t)
 	return p + t * (q - p);
 }
 
-vec3 interpolate(const vec3& p, const vec3& q, float t) {
-	return p + t * (q - p);
-}
-
 // A group consists of four points.  The corresponding de Casteljau curve
 // passes through p0 and p3.  The tangent at p0 passes through p1 and the
 // tangent at p3 passes through p2.
 class Group
 {
 public:
-	Group(const vec3 &p0, const vec3 &p1, const vec3 &p2, const vec3 &p3)
+	Group(const Point& p0, const Point& p1, const Point& p2, const Point& p3)
 		: p0(p0), p1(p1), p2(p2), p3(p3)
 	{
 		len = length();
@@ -58,22 +52,22 @@ public:
 
 	// Return the point on the curve at time t, 0 <= t <= 1.
 	// Uses de Cateljau's interpolation algorithm to find the point.
-	vec3 getPos(double t) const
+	Point getPos(double t) const
 	{
-		vec3 q0 = interpolate(p0, p1, t);
-		vec3 q1 = interpolate(p1, p2, t);
-		vec3 q2 = interpolate(p2, p3, t);
-		vec3 r0 = interpolate(q0, q1, t);
-		vec3 r1 = interpolate(q1, q2, t);
+		Point q0 = interpolate(p0, p1, t);
+		Point q1 = interpolate(p1, p2, t);
+		Point q2 = interpolate(p2, p3, t);
+		Point r0 = interpolate(q0, q1, t);
+		Point r1 = interpolate(q1, q2, t);
 		return interpolate(r0, r1, t);
 	}
 
 	// Return a unit vector giving the direction of the curve at time t, 0 <= t <= 1.
 	// Uses two nearby points to obtain the direction vector, then normalizes it.
-	vec3 getDir(double t) const
+	Vector getDir(double t) const
 	{
 		const double DELTA = 0.01;
-		vec3 s, f;
+		Point s, f;
 		if (t < 0.5)
 		{
 			s = getPos(t);
@@ -84,7 +78,7 @@ public:
 			s = getPos(t - DELTA);
 			f = getPos(t);
 		}
-		return normalize(f - s);
+		return (f - s).unit();
 	}
 
 	// Return the arc length of this segment.
@@ -119,18 +113,18 @@ private:
 	double length() const
 	{
 		const int NP = 100;
-		vec3 p = p0;
+		Point p = p0;
 		double d = 0;
 		for (int i = 1; i <= NP; ++i)
 		{
-			vec3 q = getPos(double(i) / double(NP));
-			d += dot(q, p);
+			Point q = getPos(double(i) / double(NP));
+			d += dist(q, p);
 			p = q;
 		}
 		return d;
 	}
 
-	vec3 p0, p1, p2, p3;  // The four points of the segment.
+	Point p0, p1, p2, p3;  // The four points of the segment.
 	double len;  // The actual length of the segment.
 	double normlen;  // The length of the segment, normalized so that the entire curve has length 1.
 };
@@ -141,9 +135,9 @@ private:
 class Curve
 {
 public:
-	Curve() : ok(true), np(0), totlen(0) {};
+	Curve() : ok(true) {};
 
-	void setPoints(const vector<vec3>& nsp, const vector<vec3>& nep)
+	void setPoints(const vector<Point>& nsp, const vector<Point>& nep)
 	{
 		sp = nsp;
 		ep = nep;
@@ -165,27 +159,24 @@ public:
 
 		// Find total length of curve.
 		totlen = 0;
-		for (auto &iter : gps)
-			totlen += iter.getLen();
-		//for (vector<Group>::const_iterator it = gps.begin(); it != gps.end(); ++it)
-		//	totlen += it->getLen();
+		for (vector<Group>::const_iterator it = gps.begin(); it != gps.end(); ++it)
+			totlen += it->getLen();
 
 		// Find start points of each segment.
 		dist.push_back(0);
 		double cumdist = 0;
-		//for (vector<Group>::iterator it = gps.begin(); it != gps.end(); ++it)
-		for(auto &iter : gps)
+		for (vector<Group>::iterator it = gps.begin(); it != gps.end(); ++it)
 		{
-			double normlen = iter.getLen() / totlen;
+			double normlen = it->getLen() / totlen;
 			cumdist += normlen;
 			dist.push_back(cumdist);
-			iter.setNormalizedLength(normlen);
+			it->setNormalizedLength(normlen);
 		}
 	}
 
 	// Return the point corresponding to time t on the curve.
 	// Use binary search to find which segment it belongs to.
-	vec3 getPos(double t)
+	Point getPos(double t)
 	{
 		if (ok)
 		{
@@ -204,12 +195,12 @@ public:
 			double r = (t - dist[L]) / (dist[R] - dist[L]);
 			return gps[L].getPos(r);
 		}
-		else return vec3();
+		else return Point();
 	}
 
 	// Return the direction at time t on the curve.
 	// Use binary search to find which segment it belongs to.
-	vec3 getDir(double t)
+	Vector getDir(double t)
 	{
 		if (ok)
 		{
@@ -228,7 +219,7 @@ public:
 			double r = (t - dist[L]) / (dist[R] - dist[L]);
 			return gps[L].getDir(r);
 		}
-		else return vec3();
+		else return Vector();
 	}
 
 	// Draw the tangents used to construct the curve.
@@ -268,16 +259,16 @@ private:
 	bool ok;  // Valid data has been supplied and used.
 	size_t np;  // Number of tangent pairs.
 	double totlen;  // Total length of the curve.
-	vector<vec3> sp; // Start points (given)
-	vector<vec3> ep; // End points (given)
-	vector<vec3> mp; // Midpoints (computed)
+	vector<Point> sp; // Start points (given)
+	vector<Point> ep; // End points (given)
+	vector<Point> mp; // Midpoints (computed)
 	vector<Group> gps; // Groups of 4 linked points
 	vector<double> dist; // Normalize distance to start of group
 };
 
 
 
-Curve curve;  // Global curve
+Curve c;  // Global curve
 double t = 0;  // Global time on curve, used by display function.
 
 // Display flags
@@ -292,25 +283,26 @@ bool useQuaternion = false;
 // Construct a curve from a set of built-in point pairs.
 void buildCurve()
 {
-	vector<vec3> sp;
-	sp.push_back(vec3(-24, 0, 0));
-	sp.push_back(vec3(-15, 8, 0));
-	sp.push_back(vec3(0, 8, 12));
-	sp.push_back(vec3(8, 10, 12));
-	sp.push_back(vec3(15, 0, 0));
+	vector<Point> sp;
+	sp.push_back(Point(-24, 0, 0));
+	sp.push_back(Point(-15, 8, 0));
+	sp.push_back(Point(0, 8, 12));
+	sp.push_back(Point(8, 10, 12));
+	sp.push_back(Point(15, 0, 0));
 
-	vector<vec3> ep;
-	ep.push_back(vec3(-16, 0, 0));
-	ep.push_back(vec3(-5, 15, 6));
-	ep.push_back(vec3(0, -8, 15));
-	ep.push_back(vec3(15, -10, 15));
-	ep.push_back(vec3(25, 0, 0));
-	curve.setPoints(sp, ep);
+	vector<Point> ep;
+	ep.push_back(Point(-16, 0, 0));
+	ep.push_back(Point(-5, 15, 6));
+	ep.push_back(Point(0, -8, 15));
+	ep.push_back(Point(15, -10, 15));
+	ep.push_back(Point(25, 0, 0));
+	c.setPoints(sp, ep);
 }
 
 // Display function
 void display(void)
 {
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -329,7 +321,7 @@ void display(void)
 		glBegin(GL_LINE_STRIP);
 		const int NP = 500;
 		for (int i = 0; i <= NP; ++i)
-			curve.getPos(double(i) / double(NP)).draw();
+			c.getPos(double(i) / double(NP)).draw();
 		glEnd();
 	}
 
@@ -337,18 +329,18 @@ void display(void)
 	{
 		glColor3d(1, 0, 0);
 		glBegin(GL_LINES);
-		curve.showTangents();
+		c.showTangents();
 		glEnd();
 	}
 
 	// Translate to current curve position and get local direction
-	curve.getPos(t).translate();
-	Vector d = curve.getDir(t);
+	c.getPos(t).translate();
+	Vector d = c.getDir(t);
 
 	if (displayVector)
 	{
 		glColor3d(1, 1, 1);
-		(10.0f * d).draw(Point());
+		(10 * d).draw(Point());
 	}
 
 	// Use lighting for model and axes.
@@ -384,6 +376,7 @@ void display(void)
 	glutSwapBuffers();
 }
 
+/*
 // Timing data
 const double DT = 10;
 const double totalTime = 10000; // Milliseconds needed to traverse curve
@@ -392,13 +385,13 @@ double pathTime = 0;
 
 void idle()
 {
-	double currTime = GetTickCount64() - startTime;
+	double currTime = GetTickCount() - startTime;
 	while (pathTime < currTime)
 		pathTime += DT;
 	t = pathTime / totalTime;
 	if (t > 1)
 	{
-		startTime = GetTickCount64();
+		startTime = GetTickCount();
 		pathTime = 0;
 	}
 	glutPostRedisplay();
@@ -493,3 +486,5 @@ int main(int argc, char* argv[])
 	glutMainLoop();
 	return 0;
 }
+
+*/

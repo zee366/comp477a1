@@ -931,13 +931,6 @@ namespace cugl
 		s = GLfloat(cos(angle / 2));
 	}
 
-	Quaternion::Quaternion(const glm::vec3& u, const glm::vec3& w) {
-		glm::vec3 axis = glm::cross(u, w);
-		double angle = glm::acos(glm::dot(u, w));
-		v = float(glm::sin(angle / 2.0f)) * glm::normalize(axis);
-		s = float(glm::cos(angle / 2.0f));
-	}
-
 	// Member functions for class Quaternion
 
 	Quaternion Quaternion::operator/(GLfloat scale) const
