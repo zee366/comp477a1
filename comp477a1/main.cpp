@@ -1,3 +1,24 @@
+/*
+COMP 477 Fall 2019
+Assignment 1
+Submitted by:
+Jason Brennan - 27793928
+October 11, 2019
+
+Please view the readme to see the controls
+
+This program contains code borrowed from:
+https://learnopengl.com/
+	- Camera.h (used for handling the camera)
+	- Shader.h (used to build, compile and run shaders)
+	- stb_image.h/cpp (used for creating a loading textures)
+http://www.songho.ca/opengl/gl_sphere.html
+	- Sphere.h/cpp (used for constructing a sphere object)
+https://github.com/smokhov/comp477-samples/tree/master/src/Demos/buildcurve
+	- buildcurve.cpp (used for interpolating a curve on a set of control points)
+	- cugl.h/cpp (needed by buildcurve.cpp)
+*/
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -13,6 +34,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+// Forward declaration of utility functions
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
@@ -22,31 +44,33 @@ void buildCurve(Curve& c);
 cugl::Point glmVecToCuglPoint(const glm::vec3& v);
 glm::vec3 cuglPointToGlmVec(const cugl::Point& p);
 
+// *****************************
+// GLOBAL VARIABLES AND SETTINGS
+// *****************************
 
-// settings
+// viewport settings
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 1200;
 
-// camera
+// camera settings
 jbogl::Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
 double lastX = SCR_WIDTH / 2.0f;
 double lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-// lighting
-glm::vec3 lightPos(10.0f, 10.0f, 14.14f);
-
 // timing
-double deltaTime = 0.0f; // time between current frame and last frame
-double lastFrame = 0.0f; // time of last frame
+double deltaTime = 0.0f;
+double lastFrame = 0.0f;
 
 // physics
-const float INIT_POSITION = 0.0f;
-unsigned int menuChoice = 1;
 float gravity = -9.81f;
 float dragForce = 1.2f;
 bool kineticLoss = false;
 
+
+// general
+const float INIT_POSITION = 0.0f;
+unsigned int menuChoice = 1;
 double constexpr pi = glm::pi<double>();
 
 int main() {
@@ -79,15 +103,15 @@ int main() {
 		return -1;
 	}
 
-	// build and compile our shader program
-	// ------------------------------------
+	// build and compile shaders
+	// -------------------------
 	Shader sphereShader("vertex.glsl", "fragment.glsl"); // Add path to vertex and fragment shaders here
 	Shader cubeShader("cubeVertex.glsl", "cubeFragment.glsl");
 	Shader curveShader("curveVertex.glsl", "curveFragment.glsl");
 	Shader sphereOnCurveShader("sphereOnCurveVertex.glsl", "sphereOnCurveFragment.glsl");
 
-	// set up vertex data (and buffer(s)) and configure vertex attributes
-	// ------------------------------------------------------------------
+	// set up vertex data (and buffer(s)) and configure vertex attributes for each object
+	// ----------------------------------------------------------------------------------
 
 	// ******
 	// SPHERE
@@ -101,18 +125,12 @@ int main() {
 	glGenBuffers(1, &sphereEBO);
 
 	glBindVertexArray(sphereVAO);
-
-	// position
 	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
 	glBufferData(GL_ARRAY_BUFFER, sphere.getVertices().size() * sizeof(float), &sphere.getVertices().front(), GL_STATIC_DRAW);
-
-	// indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.getIndices().size() * sizeof(int), &sphere.getIndices().front(), GL_STATIC_DRAW);
-
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
@@ -124,27 +142,21 @@ int main() {
 	glGenBuffers(1, &cubeVBO);
 
 	glBindVertexArray(cubeVAO);
-	
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), &cube[0], GL_STATIC_DRAW);
-
-	// position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	// texture coordinates
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	
-	// TEXTURE
+	// ****************
+	// TEXTURE FOR CUBE
+	// ****************
 	unsigned int texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
-
-	// set texture wrapping
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -162,17 +174,16 @@ int main() {
 	}
 	stbi_image_free(data);
 
-	// set uniform
+	// set uniform for texture
 	cubeShader.use();
 	cubeShader.setInt("texture1", 0);
 
 	// *****
 	// CURVE
 	// *****
-
 	Curve c;
 	buildCurve(c);
-	double t = 0.0;  // Global time on curve, used by display function.
+	double t = 0.0;
 	vector<float> curvePoints;
 	const int NP = 1000;
 	for (int i = 0; i <= NP; ++i) {
@@ -188,57 +199,48 @@ int main() {
 	glGenBuffers(1, &curveVBO);
 
 	glBindVertexArray(curveVAO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, curveVBO);
 	glBufferData(GL_ARRAY_BUFFER, curvePoints.size() * sizeof(float), &curvePoints.front(), GL_STATIC_DRAW);
-
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	// ***************
 	// SPHERE ON CURVE
 	// ***************
-
 	Sphere sphereOnCurve(1.0f, 32, 16, initialPosition);
-
 	unsigned int sphereOnCurveVAO, sphereOnCurveVBO, sphereOnCurveEBO;
 	glGenVertexArrays(1, &sphereOnCurveVAO);
 	glGenBuffers(1, &sphereOnCurveVBO);
 	glGenBuffers(1, &sphereOnCurveEBO);
 
 	glBindVertexArray(sphereOnCurveVAO);
-
-	// position
 	glBindBuffer(GL_ARRAY_BUFFER, sphereOnCurveVBO);
 	glBufferData(GL_ARRAY_BUFFER, sphereOnCurve.getVertices().size() * sizeof(float), &sphereOnCurve.getVertices().front(), GL_STATIC_DRAW);
-
-	// indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereOnCurveEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereOnCurve.getIndices().size() * sizeof(int), &sphereOnCurve.getIndices().front(), GL_STATIC_DRAW);
-
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	// set modes
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// ****************
+	// SET OPENGL MODES
+	// ****************
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_LINE_STIPPLE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-	//glEnable(GL_CULL_FACE);
 
+	// settings for sphere inside cube
 	glm::vec3 acceleration = glm::vec3(0.0f);
 	glm::vec3 velocity = glm::vec3(-3.0f, 1.5f, -2.1f);
 	glm::vec3 newVelocity(0.0f);
 	glm::vec3 position = glm::vec3(0.0f);
 
+	// settings for sphere on curve
 	glm::vec3 sphereOnCurvePosition = glm::vec3(0.0f);
 	const double DT = 10;
 	const double totalTime = 10000; // Milliseconds needed to traverse curve
@@ -252,7 +254,8 @@ int main() {
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-
+		
+		// for sphere on curve
 		double currTime = GetTickCount64() - startTime;
 		while (pathTime < currTime)
 			pathTime += DT;
@@ -263,6 +266,7 @@ int main() {
 			pathTime = 0;
 		}
 
+		// ease in, ease out
 		t = 0.5f * (glm::sin((i - 0.5f) * pi) + 1.0f);
 
 		// input
@@ -312,6 +316,7 @@ int main() {
 			}
 		}
 
+		// set position of sphere in cube
 		position += velocity * (float)deltaTime + acceleration * ((float)deltaTime * (float)deltaTime * 0.5f);
 
 		glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
@@ -321,6 +326,7 @@ int main() {
 		sphereShader.setMat4("view", view);
 		sphereShader.setMat4("model", model);
 		
+		// DRAW SPHERE IN CUBE
 		glBindVertexArray(sphereVAO);
 		glDrawElements(GL_TRIANGLES, sphere.getIndices().size(), GL_UNSIGNED_INT, 0);
 
@@ -331,6 +337,7 @@ int main() {
 		cubeShader.setMat4("projection", projection);
 		cubeShader.setMat4("view", view);
 
+		// DRAW CUBE
 		glDepthMask(GL_FALSE);
 		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -341,6 +348,7 @@ int main() {
 		curveShader.setMat4("projection", projection);
 		curveShader.setMat4("view", view);
 
+		// DRAW CURVE
 		glBindVertexArray(curveVAO);
 		glDrawArrays(GL_LINE_STRIP, 0, NP);
 
@@ -354,6 +362,7 @@ int main() {
 		sphereOnCurveShader.setMat4("view", view);
 		sphereOnCurveShader.setMat4("model", sphereOnCurveModel);
 
+		// DRAW SPHERE ON CURVE
 		glBindVertexArray(sphereOnCurveVAO);
 		glDrawElements(GL_TRIANGLES, sphereOnCurve.getIndices().size(), GL_UNSIGNED_INT, 0);
 
@@ -376,6 +385,10 @@ int main() {
 
 	glDeleteVertexArrays(1, &curveVAO);
 	glDeleteBuffers(1, &curveVBO);
+
+	glDeleteVertexArrays(1, &sphereOnCurveVAO);
+	glDeleteBuffers(1, &sphereOnCurveVBO);
+	glDeleteBuffers(1, &sphereOnCurveEBO);
 
 	glDeleteTextures(1, &texture);
 
@@ -454,10 +467,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 	}
 }
 
+// returns the distance from a point to a plane
 float distanceToPlane(glm::vec3 point, glm::vec3 planePoint, glm::vec3 planeNorm) {
 	return abs(-glm::dot(planeNorm, planePoint) + glm::dot(planeNorm, point));
 }
 
+// check all faces of a cube for collision, since the sphere is radius 1, collision occurs if distance is less than 1
 bool checkCollisions(glm::vec3 sphereCenter, glm::vec3& velocity) {
 	if (distanceToPlane(sphereCenter, topLeftFront, leftFaceNorm) < 1.0f || distanceToPlane(sphereCenter, topRightFront, rightFaceNorm) < 1.0f) {
 		velocity.x = -velocity.x;
@@ -474,7 +489,7 @@ bool checkCollisions(glm::vec3 sphereCenter, glm::vec3& velocity) {
 	return false;
 }
 
-// Construct a curve from a set of built-in point pairs.
+// Control points for the curve
 void buildCurve(Curve& c)
 {
 	vector<Point> sp;
@@ -499,10 +514,12 @@ void buildCurve(Curve& c)
 	c.setPoints(sp, ep);
 }
 
+// utility function that converts a glm::vec3 to cugl::point
 cugl::Point glmVecToCuglPoint(const glm::vec3& v) {
 	return cugl::Point(v.x, v.y, v.z);
 }
 
+// utility function that converts a cugl::point to a glm::vec3
 glm::vec3 cuglPointToGlmVec(const cugl::Point& p) {
 	return glm::vec3(p[0], p[1], p[2]);
 }
