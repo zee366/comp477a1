@@ -7,8 +7,8 @@ Sphere::Sphere() :
 	genIndices();
 }
 
-Sphere::Sphere(float radius, int sectors, int stacks) :
-	_radius(radius), _sectors(sectors), _stacks(stacks)
+Sphere::Sphere(float radius, int sectors, int stacks, glm::vec3 position) :
+	_radius(radius), _sectors(sectors), _stacks(stacks), _center(position)
 {
 	genVertexAttributes();
 	genIndices();
@@ -43,14 +43,26 @@ glm::vec3 Sphere::getPointAt(float theta, float phi) const
 	return glm::vec3(x, y, z);
 }
 
+glm::vec3 Sphere::getCenter() const
+{
+	return _center;
+}
+
+void Sphere::setCenter(glm::mat4 transform)
+{
+	_center.x = transform[3][0];
+	_center.y = transform[3][1];
+	_center.z = transform[3][2];
+}
+
 void Sphere::genVertexAttributes()
 {
 	float x, y, z, xy;
 	float nx, ny, nz;
 	float s, t;
 	float radiusInverse = 1.0f / _radius;
-	float pi = glm::pi<float>();
-	float half_pi = glm::half_pi<float>();
+	float constexpr pi = glm::pi<float>();
+	float constexpr half_pi = glm::half_pi<float>();
 	
 	float sectorWidth = 2 * pi / _sectors;
 	float stackHeight = pi / _stacks;
@@ -103,7 +115,7 @@ void Sphere::genIndices()
 			{
 				_indices.push_back(k1);
 				_indices.push_back(k2);
-				_indices.push_back(k2 + 1);
+				_indices.push_back(k1 + 1);
 			}
 			
 			if(i != (_stacks - 1))

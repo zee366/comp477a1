@@ -10,7 +10,7 @@ class Sphere
 {
 public:
 	Sphere();
-	Sphere(float radius, int sectors, int stacks);
+	Sphere(float radius, int sectors, int stacks, glm::vec3 position);
 
 	vector<float> getVertices() const;
 	vector<float> getNormals() const;
@@ -18,6 +18,8 @@ public:
 	vector<int> getIndices() const;
 
 	glm::vec3 getPointAt(float theta, float phi) const;
+	glm::vec3 getCenter() const;
+	void setCenter(glm::mat4);
 
 private:
 	float _radius;
@@ -27,6 +29,8 @@ private:
 	vector<float> _normals;
 	vector<float> _texCoords;
 	vector<int> _indices;
+
+	glm::vec3 _center;
 
 	void genVertexAttributes();
 	void genIndices();
